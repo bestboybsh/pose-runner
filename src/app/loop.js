@@ -1,6 +1,6 @@
 // Game loop manager
 export class GameLoop {
-  constructor(engine, renderer, controllerMux, poseEngine, poseController, video, hudView) {
+  constructor(engine, renderer, controllerMux, poseEngine, poseController, video, hudView, poseTestView = null) {
     this.engine = engine;
     this.renderer = renderer;
     this.controllerMux = controllerMux;
@@ -8,12 +8,14 @@ export class GameLoop {
     this.poseController = poseController;
     this.video = video;
     this.hudView = hudView;
+    this.poseTestView = poseTestView;
     
     this.rafId = null;
     this.lastPoseTs = 0;
     this.lastFpsTick = performance.now();
     this.frames = 0;
     this.poseInterval = 33; // ~30Hz
+    this.lastLandmarks = null;
   }
 
   start() {
@@ -35,19 +37,33 @@ export class GameLoop {
       let actions = { jump: false, duck: false };
 
       // Try pose detection
+      let landmarks = null;
       if (this.poseEngine.isLoaded() && this.video.readyState >= 2) {
         const state = this.engine.getState();
         if (!state.over && now - this.lastPoseTs > this.poseInterval) {
           this.lastPoseTs = now;
           try {
-            const landmarks = this.poseEngine.detect(this.video, now);
+            landmarks = this.poseEngine.detect(this.video, now);
             if (landmarks) {
+              this.lastLandmarks = landmarks;
               actions = this.controllerMux.getActionsFromPose(landmarks);
             }
           } catch (e) {
             // Silently fail - fall back to keyboard
           }
+        } else if (this.lastLandmarks) {
+          landmarks = this.lastLandmarks;
         }
+      }
+
+      // Update test view if available
+      if (this.poseTestView && this.poseTestView.visible) {
+        this.poseTestView.update(
+          landmarks,
+          actions,
+          this.poseController.getCalibration(),
+          !!landmarks
+        );
       }
 
       // Merge with keyboard (pose actions take precedence, but keyboard can override)

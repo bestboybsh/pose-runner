@@ -16,6 +16,8 @@
     .muted { color: #666; }
     #leaderboard { background: #f6f6f6; padding: 12px; border-radius: 12px; margin-top: 12px; display: none; }
     #leaderboard h3 { margin-top: 0; }
+    #poseTest { background: #f6f6f6; padding: 12px; border-radius: 12px; margin-top: 12px; display: none; }
+    #poseTest h3 { margin-top: 0; }
   </style>
 </head>
 <body>
@@ -27,6 +29,7 @@
       <button id="btnLoadPose" disabled>Load pose</button>
       <button id="btnCal" disabled>Calibrate</button>
       <button id="btnStop" disabled>Stop</button>
+      <button id="btnTest">테스트 패널 (T)</button>
 
       <label class="pill">
         Facing
@@ -42,7 +45,7 @@
     </div>
 
     <div class="muted">
-      Controls: Jump = real jump or Space. Duck = squat or ArrowDown (hold). Restart = R.
+      Controls: Jump = real jump or Space. Duck = squat or ArrowDown (hold). Restart = R. Test Panel = T.
       Flow: Start camera → Load pose → stand still 1s → Calibrate.
     </div>
 
@@ -51,6 +54,7 @@
 
     <div id="hud"></div>
     <div id="leaderboard"></div>
+    <div id="poseTest"></div>
   </div>
 
   <script type="module">
@@ -63,14 +67,16 @@
         start: document.getElementById("btnStart"),
         loadPose: document.getElementById("btnLoadPose"),
         calibrate: document.getElementById("btnCal"),
-        stop: document.getElementById("btnStop")
+        stop: document.getElementById("btnStop"),
+        test: document.getElementById("btnTest")
       },
       statusEl: document.getElementById("status"),
       scoreEl: document.getElementById("score"),
       fpsEl: document.getElementById("fps"),
       hudEl: document.getElementById("hud"),
       facingSel: document.getElementById("facing"),
-      leaderboardEl: document.getElementById("leaderboard")
+      leaderboardEl: document.getElementById("leaderboard"),
+      poseTestEl: document.getElementById("poseTest")
     });
 
     window.addEventListener("load", () => {

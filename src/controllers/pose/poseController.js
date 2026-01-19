@@ -79,4 +79,8 @@ export class PoseController {
     this.calibration.torsoY = null;
     this.calibration.hipY = null;
   }
+
+  getCalibration() {
+    return { ...this.calibration };
+  }
 }

@@ -6,6 +6,7 @@ import { ControllerMux } from '../controllers/controllerMux.js';
 import { CanvasRenderer } from '../render/canvasRenderer.js';
 import { HudView } from '../ui/hudView.js';
 import { LeaderboardView } from '../ui/leaderboardView.js';
+import { PoseTestView } from '../ui/poseTestView.js';
 import { GameLoop } from './loop.js';
 import { GAME_CONFIG } from '../engine/constants.js';
 
@@ -30,6 +31,7 @@ export class App {
     this.renderer = new CanvasRenderer(this.canvas);
     this.hudView = new HudView(this.statusEl, this.scoreEl, this.fpsEl, this.hudEl);
     this.leaderboardView = new LeaderboardView(config.leaderboardEl);
+    this.poseTestView = new PoseTestView(config.poseTestEl);
     
     this.gameLoop = new GameLoop(
       this.engine,
@@ -38,7 +40,8 @@ export class App {
       this.poseEngine,
       this.poseController,
       this.video,
-      this.hudView
+      this.hudView,
+      this.poseTestView
     );
 
     this.stream = null;
@@ -51,11 +54,16 @@ export class App {
     this.buttons.loadPose.addEventListener("click", () => this.loadPoseEngine());
     this.buttons.calibrate.addEventListener("click", () => this.calibrate());
     this.buttons.stop.addEventListener("click", () => this.stopCamera());
+    this.buttons.test.addEventListener("click", () => this.poseTestView.toggle());
 
-    // Keyboard listener for restart
+    // Keyboard listeners
     window.addEventListener("keydown", (e) => {
       if (e.code === "KeyR") {
         this.resetGame();
+      }
+      // Toggle test view with 'T' key
+      if (e.code === "KeyT") {
+        this.poseTestView.toggle();
       }
     });
   }
