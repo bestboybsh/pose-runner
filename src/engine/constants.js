@@ -1,0 +1,40 @@
+// Game constants
+export const GAME_CONFIG = {
+  INITIAL_SPEED: 6,
+  SPEED_INCREMENT: 0.6,
+  SPEED_INTERVAL: 240,
+  GRAVITY: 0.9,
+  JUMP_VELOCITY: -14,
+  GROUND_Y: 340,
+  CANVAS_WIDTH: 980,
+  CANVAS_HEIGHT: 420,
+  PLAYER: {
+    X: 120,
+    W: 30,
+    H_STANDING: 46,
+    H_DUCKING: 26
+  },
+  OBSTACLE: {
+    SPAWN_MIN_CD: 70,
+    SPAWN_MAX_CD: 140,
+    LOW_W: 22,
+    LOW_H: 48,
+    HIGH_W: 40,
+    HIGH_H: 26,
+    HIGH_OFFSET: 70,
+    LOW_PROBABILITY: 0.65
+  }
+};
+
+export const POSE_LANDMARKS = {
+  L_SHOULDER: 11,
+  R_SHOULDER: 12,
+  L_HIP: 23,
+  R_HIP: 24
+};
+
+export const CALIBRATION = {
+  SQUAT_HIP_DELTA: 0.10,
+  JUMP_TORSO_DELTA: 0.06,
+  MIN_VISIBILITY: 0.3
+};
