@@ -8,16 +8,79 @@
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     button, select { font-size: 16px; padding: 10px 12px; }
-    #wrap { display: grid; gap: 12px; grid-template-columns: 1fr; max-width: 980px; }
-    #video { width: min(92vw, 980px); background: #111; border-radius: 12px; }
-    #game { width: min(92vw, 980px); height: auto; border-radius: 12px; background: #111; }
+    #wrap { display: grid; gap: 12px; grid-template-columns: 1fr; max-width: 1400px; }
+    .game-area { position: relative; display: inline-block; }
+    .video-container {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 200px;
+      height: auto;
+      border-radius: 8px;
+      border: 2px solid #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10;
+      display: none;
+      overflow: hidden;
+      background: #111;
+    }
+    #video { 
+      width: 100%;
+      height: auto;
+      display: block;
+      transform: scaleX(-1); /* 좌우 대칭 (미러링) */
+    }
+    #skeletonCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 11;
+    }
+    #game { 
+      width: min(92vw, 980px); 
+      height: auto; 
+      border-radius: 12px; 
+      background: #111; 
+      display: block;
+    }
     #hud { white-space: pre-wrap; background: #f6f6f6; padding: 12px; border-radius: 12px; max-height: 200px; overflow-y: auto; }
     .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #eee; margin-right: 6px; }
     .muted { color: #666; }
     #leaderboard { background: #f6f6f6; padding: 12px; border-radius: 12px; margin-top: 12px; display: none; }
     #leaderboard h3 { margin-top: 0; }
-    #poseTest { background: #f6f6f6; padding: 12px; border-radius: 12px; margin-top: 12px; display: none; }
-    #poseTest h3 { margin-top: 0; }
+    
+    /* 테스트 패널을 화면에 항상 표시되도록 */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 12px;
+      align-items: start;
+    }
+    #poseTest { 
+      background: #f6f6f6; 
+      padding: 12px; 
+      border-radius: 12px; 
+      display: none;
+      max-height: 600px;
+      overflow-y: auto;
+      position: sticky;
+      top: 12px;
+    }
+    #poseTest h3 { margin-top: 0; margin-bottom: 12px; font-size: 16px; }
+    
+    @media (max-width: 1400px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+      #poseTest {
+        position: relative;
+        top: 0;
+        max-height: 400px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -41,6 +104,7 @@
 
       <span class="pill">Status: <b id="status">INIT</b></span>
       <span class="pill">Score: <b id="score">0</b></span>
+      <span class="pill">Items: <b id="items">0 (+0)</b></span>
       <span class="pill">FPS: <b id="fps">0</b></span>
     </div>
 
@@ -49,12 +113,20 @@
       Flow: Start camera → Load pose → stand still 1s → Calibrate.
     </div>
 
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="game" width="980" height="420"></canvas>
-
-    <div id="hud"></div>
-    <div id="leaderboard"></div>
-    <div id="poseTest"></div>
+    <div class="content-grid">
+      <div>
+        <div class="game-area">
+          <div class="video-container">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="skeletonCanvas"></canvas>
+          </div>
+          <canvas id="game" width="980" height="420"></canvas>
+        </div>
+        <div id="hud"></div>
+        <div id="leaderboard"></div>
+      </div>
+      <div id="poseTest"></div>
+    </div>
   </div>
 
   <script type="module">
@@ -63,6 +135,7 @@
     const app = new App({
       video: document.getElementById("video"),
       canvas: document.getElementById("game"),
+      skeletonCanvas: document.getElementById("skeletonCanvas"),
       buttons: {
         start: document.getElementById("btnStart"),
         loadPose: document.getElementById("btnLoadPose"),

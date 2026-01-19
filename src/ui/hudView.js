@@ -1,10 +1,11 @@
 // HUD (Heads-Up Display) view manager
 export class HudView {
-  constructor(statusEl, scoreEl, fpsEl, hudEl) {
+  constructor(statusEl, scoreEl, fpsEl, hudEl, itemsEl = null) {
     this.statusEl = statusEl;
     this.scoreEl = scoreEl;
     this.fpsEl = fpsEl;
     this.hudEl = hudEl;
+    this.itemsEl = itemsEl;
   }
 
   setStatus(status) {
@@ -16,6 +17,12 @@ export class HudView {
   setScore(score) {
     if (this.scoreEl) {
       this.scoreEl.textContent = String(score);
+    }
+  }
+
+  setItemsCollected(count, itemScore) {
+    if (this.itemsEl) {
+      this.itemsEl.textContent = `${count} (+${itemScore})`;
     }
   }
 

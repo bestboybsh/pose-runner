@@ -9,3 +9,10 @@ export function checkPlayerObstacleCollision(playerRect, obstacle) {
     obstacle.x, obstacle.y - obstacle.h, obstacle.w, obstacle.h
   );
 }
+
+export function checkPlayerItemCollision(playerRect, item) {
+  return aabb(
+    playerRect.x, playerRect.y, playerRect.w, playerRect.h,
+    item.x, item.y - item.h, item.w, item.h
+  );
+}

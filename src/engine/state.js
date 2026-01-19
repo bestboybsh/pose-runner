@@ -8,7 +8,10 @@ export class GameState {
 
   reset() {
     this.t = 0;
-    this.score = 0;
+    this.timeScore = 0;  // 시간 기반 점수
+    this.itemScore = 0;  // 아이템 점수
+    this.score = 0;  // 총점
+    this.itemsCollected = 0;
     this.speed = GAME_CONFIG.INITIAL_SPEED;
     this.player = {
       x: GAME_CONFIG.PLAYER.X,
@@ -19,8 +22,15 @@ export class GameState {
       duck: false
     };
     this.obstacles = [];
+    this.items = [];
     this.spawnCd = 0;
+    this.itemSpawnCd = 0;
     this.over = false;
+    // faceImage는 reset 시 유지 (게임 재시작해도 얼굴 유지)
+  }
+
+  setFaceImage(image) {
+    this.faceImage = image;
   }
 
   getPlayerRect() {
