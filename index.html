@@ -1,336 +1,123 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Camera Pose Runner</title>
+  <title>Camera Test Minimal</title>
   <style>
-    body { margin: 0; background:#111; color:#eee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    .wrap { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 10px; }
-    canvas { width: 100%; max-width: 900px; background:#000; border-radius: 12px; }
-    video { display:none; }
-    .hud { max-width: 900px; display:flex; justify-content:space-between; gap: 10px; flex-wrap: wrap; }
-    .pill { background:#222; padding: 8px 12px; border-radius: 999px; }
-    button { background:#2a2a2a; color:#eee; border:0; padding:10px 14px; border-radius:10px; }
-    button:active { transform: scale(0.98); }
-    .hint { max-width: 900px; line-height: 1.4; color:#bbb; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    video { width: min(92vw, 720px); background: #111; border-radius: 12px; }
+    button, select { font-size: 16px; padding: 10px 12px; }
+    #log { white-space: pre-wrap; background: #f6f6f6; padding: 12px; border-radius: 12px; margin-top: 12px; }
   </style>
-
-  <!-- MediaPipe Pose -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <div class="hud">
-      <div class="pill">상태: <b id="state">INIT</b></div>
-      <div class="pill">점수: <b id="score">0</b></div>
-      <div class="pill">FPS: <b id="fps">0</b></div>
-      <button id="recal">기준 재설정(서있는 자세로)</button>
-    </div>
+  <h2>Camera Test Minimal</h2>
 
-    <canvas id="game" width="900" height="520"></canvas>
-    <div class="hint">
-      사용법: 화면 안에 전신이 나오면 가장 잘 됨.<br>
-      서있는 자세로 1초 정도 유지한 뒤 “기준 재설정”을 눌러 캘리브레이션.<br>
-      점프하면 점프, 앉으면 숙이기, 가만히 서있으면 기본 달리기.
-    </div>
+  <div class="row">
+    <button id="start">Start camera</button>
+    <button id="stop" disabled>Stop</button>
 
-    <video id="video" playsinline></video>
+    <label>
+      Facing
+      <select id="facing">
+        <option value="user">Front (user)</option>
+        <option value="environment">Back (environment)</option>
+      </select>
+    </label>
   </div>
 
-<script>
-(() => {
-  const canvas = document.getElementById("game");
-  const ctx = canvas.getContext("2d");
-  const video = document.getElementById("video");
+  <p>
+    If you do not see a permission popup, the page is not being served over HTTPS or the browser blocked access.
+    GitHub Pages is HTTPS, so this should pop up.
+  </p>
 
-  const uiState = document.getElementById("state");
-  const uiScore = document.getElementById("score");
-  const uiFps = document.getElementById("fps");
-  const btnRecal = document.getElementById("recal");
+  <video id="video" autoplay playsinline muted></video>
 
-  // -----------------------------
-  // Pose -> 동작 분류 상태
-  // -----------------------------
-  let baseHipY = null;
-  let hipYSmooth = null;
-  let hipYVel = 0;
-  let lastHipYSmooth = null;
-  let lastPoseTs = performance.now();
+  <div id="log"></div>
 
-  let action = "INIT";           // RUN | JUMP | DUCK | INIT
-  let jumpCooldownMs = 0;
+  <script>
+    const logEl = document.getElementById("log");
+    const video = document.getElementById("video");
+    const startBtn = document.getElementById("start");
+    const stopBtn = document.getElementById("stop");
+    const facingSel = document.getElementById("facing");
 
-  // 튜닝 값
-  const SMOOTH_ALPHA = 0.25;
-  const JUMP_UP_DELTA = 0.055;
-  const DUCK_DOWN_DELTA = 0.070;
-  const JUMP_VEL_THRESH = -0.0015; // y/ms (hipY가 감소하면 위로)
-  const MIN_VIS = 0.55;
+    let stream = null;
 
-  function lerp(a,b,t){ return a + (b-a)*t; }
-
-  function setAction(next) {
-    if (action !== next) action = next;
-    uiState.textContent = action;
-  }
-
-  function recalibrate(currentHipY) {
-    baseHipY = currentHipY;
-  }
-
-  btnRecal.addEventListener("click", () => {
-    if (hipYSmooth != null) {
-      recalibrate(hipYSmooth);
-      setAction("RUN");
-    }
-  });
-
-  // -----------------------------
-  // 러너 게임 로직
-  // -----------------------------
-  const GROUND_Y = 420;
-  const player = {
-    x: 140,
-    y: GROUND_Y,
-    w: 50,
-    h: 80,
-    vy: 0,
-    onGround: true,
-    duck: false
-  };
-
-  const gravity = 0.9;
-  const jumpPower = -18;
-
-  let obstacles = [];
-  let spawnT = 0;
-  let speed = 7;
-  let score = 0;
-  let alive = true;
-
-  function resetGame() {
-    obstacles = [];
-    spawnT = 0;
-    speed = 7;
-    score = 0;
-    alive = true;
-    player.y = GROUND_Y;
-    player.vy = 0;
-    player.onGround = true;
-    player.duck = false;
-  }
-
-  function spawnObstacle() {
-    const type = Math.random() < 0.5 ? "low" : "high";
-    if (type === "low") {
-      obstacles.push({ x: canvas.width + 20, y: GROUND_Y + 20, w: 40, h: 40, type });
-    } else {
-      obstacles.push({ x: canvas.width + 20, y: GROUND_Y - 90, w: 45, h: 60, type });
-    }
-  }
-
-  function rectsOverlap(a, b) {
-    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-  }
-
-  function updateGame(dt) {
-    if (!alive) return;
-
-    // 동작 적용
-    if (action === "JUMP" && player.onGround) {
-      player.vy = jumpPower;
-      player.onGround = false;
+    function log(...args) {
+      const msg = args.map(a => (typeof a === "string" ? a : JSON.stringify(a, null, 2))).join(" ");
+      console.log(msg);
+      logEl.textContent += msg + "\n";
     }
 
-    player.duck = (action === "DUCK");
-    player.h = player.duck ? 50 : 80;
+    async function startCamera() {
+      logEl.textContent = "";
+      log("Starting camera...");
 
-    // 물리
-    player.vy += gravity;
-    player.y += player.vy;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        log("ERROR: getUserMedia not supported in this browser.");
+        return;
+      }
 
-    if (player.y >= GROUND_Y) {
-      player.y = GROUND_Y;
-      player.vy = 0;
-      player.onGround = true;
+      // Stop previous stream if any
+      if (stream) stopCamera();
+
+      const facingMode = facingSel.value;
+
+      const constraints = {
+        audio: false,
+        video: {
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        log("getUserMedia OK.");
+
+        video.srcObject = stream;
+
+        // Some mobile browsers need explicit play()
+        await video.play();
+        log("video.play OK.");
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        // Show actual track settings
+        const track = stream.getVideoTracks()[0];
+        log("Track label:", track.label || "(no label)");
+        log("Settings:", track.getSettings ? track.getSettings() : "(no getSettings)");
+      } catch (err) {
+        log("ERROR:", err && err.name ? err.name : "Unknown", err && err.message ? err.message : String(err));
+        log("Tip: Check site permissions, HTTPS, or if another app is using the camera.");
+      }
     }
 
-    // 장애물
-    spawnT += dt;
-    const spawnInterval = Math.max(650, 1100 - score * 2);
-    if (spawnT > spawnInterval) {
-      spawnT = 0;
-      spawnObstacle();
+    function stopCamera() {
+      if (stream) {
+        for (const t of stream.getTracks()) t.stop();
+        stream = null;
+      }
+      video.srcObject = null;
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      log("Stopped.");
     }
 
-    speed = Math.min(15, 7 + score / 300);
+    startBtn.addEventListener("click", startCamera);
+    stopBtn.addEventListener("click", stopCamera);
 
-    for (const o of obstacles) o.x -= speed;
-    obstacles = obstacles.filter(o => o.x + o.w > -20);
-
-    // 충돌
-    const pRect = { x: player.x, y: player.y - player.h, w: player.w, h: player.h };
-    for (const o of obstacles) {
-      const oRect = { x: o.x, y: o.y - o.h, w: o.w, h: o.h };
-      if (rectsOverlap(pRect, oRect)) alive = false;
-    }
-
-    score += dt * 0.02;
-    uiScore.textContent = Math.floor(score);
-  }
-
-  function drawGame() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // 바닥
-    ctx.strokeStyle = "#444";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(0, GROUND_Y + 2);
-    ctx.lineTo(canvas.width, GROUND_Y + 2);
-    ctx.stroke();
-
-    // 플레이어
-    ctx.fillStyle = alive ? "#00e5ff" : "#ff5252";
-    ctx.fillRect(player.x, player.y - player.h, player.w, player.h);
-
-    // 장애물
-    for (const o of obstacles) {
-      ctx.fillStyle = o.type === "low" ? "#ffd54f" : "#a5d6a7";
-      ctx.fillRect(o.x, o.y - o.h, o.w, o.h);
-    }
-
-    // 기준 표시
-    ctx.fillStyle = "#bbb";
-    ctx.font = "18px system-ui";
-    const baseText = baseHipY == null ? "기준: 미설정 (서서 '기준 재설정' 누르기)" : "기준: 설정됨";
-    ctx.fillText(baseText, 16, 28);
-
-    if (!alive) {
-      ctx.fillStyle = "#fff";
-      ctx.font = "44px system-ui";
-      ctx.fillText("GAME OVER", canvas.width/2 - 130, canvas.height/2 - 10);
-      ctx.font = "18px system-ui";
-      ctx.fillText("화면 탭하면 재시작", canvas.width/2 - 70, canvas.height/2 + 30);
-    }
-  }
-
-  canvas.addEventListener("pointerdown", () => {
-    if (!alive) resetGame();
-  });
-
-  // -----------------------------
-  // MediaPipe Pose 연결
-  // -----------------------------
-  const pose = new Pose.Pose({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-  });
-
-  pose.setOptions({
-    modelComplexity: 1,
-    smoothLandmarks: true,
-    enableSegmentation: false,
-    minDetectionConfidence: 0.6,
-    minTrackingConfidence: 0.6
-  });
-
-  pose.onResults((res) => {
-    const now = performance.now();
-    const dt = Math.max(1, now - lastPoseTs);
-    lastPoseTs = now;
-
-    if (!res.poseLandmarks || res.poseLandmarks.length < 33) return;
-
-    // 엉덩이 평균 y: 23, 24
-    const lHip = res.poseLandmarks[23];
-    const rHip = res.poseLandmarks[24];
-    if (!lHip || !rHip) return;
-
-    const vis = Math.min(lHip.visibility ?? 1, rHip.visibility ?? 1);
-    if (vis < MIN_VIS) return;
-
-    const hipY = (lHip.y + rHip.y) / 2;
-
-    hipYSmooth = (hipYSmooth == null) ? hipY : lerp(hipYSmooth, hipY, SMOOTH_ALPHA);
-
-    if (lastHipYSmooth != null) {
-      hipYVel = (hipYSmooth - lastHipYSmooth) / dt;
-    }
-    lastHipYSmooth = hipYSmooth;
-
-    if (baseHipY == null) {
-      setAction("INIT");
-      return;
-    }
-
-    if (jumpCooldownMs > 0) jumpCooldownMs -= dt;
-
-    const delta = hipYSmooth - baseHipY; // +면 내려감(숙이기), -면 올라감(점프)
-
-    if (delta > DUCK_DOWN_DELTA) {
-      setAction("DUCK");
-      return;
-    }
-
-    const jumpTrigger = (delta < -JUMP_UP_DELTA) && (hipYVel < JUMP_VEL_THRESH);
-    if (jumpTrigger && jumpCooldownMs <= 0) {
-      setAction("JUMP");
-      jumpCooldownMs = 350;
-      return;
-    }
-
-    setAction("RUN");
-  });
-
-  async function startCamera() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false
-      });
-      video.srcObject = stream;
-      await video.play();
-
-      const camera = new Camera(video, {
-        onFrame: async () => { await pose.send({ image: video }); },
-        width: 1280,
-        height: 720
-      });
-      camera.start();
-    } catch (e) {
-      uiState.textContent = "카메라 권한 오류";
-      console.error(e);
-      alert("카메라 권한이 필요해요. HTTPS 환경에서 실행하고 권한을 허용해 주세요.");
-    }
-  }
-
-  // 게임 루프
-  let lastT = performance.now();
-  let fpsAcc = 0, fpsCount = 0;
-
-  function loop(t) {
-    const dt = t - lastT;
-    lastT = t;
-
-    fpsAcc += dt; fpsCount += 1;
-    if (fpsAcc >= 500) {
-      uiFps.textContent = Math.round(1000 * fpsCount / fpsAcc);
-      fpsAcc = 0; fpsCount = 0;
-    }
-
-    updateGame(dt);
-    drawGame();
-    requestAnimationFrame(loop);
-  }
-
-  resetGame();
-  startCamera();
-  requestAnimationFrame(loop);
-})();
-</script>
+    // Helpful diagnostics
+    window.addEventListener("load", () => {
+      log("Page loaded.");
+      log("isSecureContext:", window.isSecureContext);
+      log("UserAgent:", navigator.userAgent);
+    });
+  </script>
 </body>
 </html>
