@@ -3,108 +3,97 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pose Runner</title>
+  <title>Pose Runner (Stable Camera)</title>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     button, select { font-size: 16px; padding: 10px 12px; }
-    #wrap { display: grid; gap: 12px; grid-template-columns: 1fr; max-width: 980px; }
-    #video { width: min(92vw, 980px); background: #111; border-radius: 12px; }
-    #game { width: min(92vw, 980px); height: auto; border-radius: 12px; background: #111; }
-    #hud { white-space: pre-wrap; background: #f6f6f6; padding: 12px; border-radius: 12px; }
+    video { width: min(92vw, 980px); background: #111; border-radius: 12px; }
+    #hud { white-space: pre-wrap; background: #f6f6f6; padding: 12px; border-radius: 12px; margin-top: 10px; }
     .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #eee; margin-right: 6px; }
-    .muted { color: #666; }
   </style>
 </head>
 <body>
-  <h2>Pose Runner</h2>
+  <h2>Pose Runner (Stable Camera)</h2>
 
-  <div id="wrap">
-    <div class="row">
-      <button id="btnStart">Start camera</button>
-      <button id="btnCal" disabled>Calibrate (stand still)</button>
-      <button id="btnStop" disabled>Stop</button>
+  <div class="row">
+    <button id="btnStart">Start camera</button>
+    <button id="btnLoadPose" disabled>Load pose engine</button>
+    <button id="btnStop" disabled>Stop</button>
 
-      <label class="pill">
-        Facing
-        <select id="facing">
-          <option value="user">Front</option>
-          <option value="environment">Back</option>
-        </select>
-      </label>
+    <label class="pill">
+      Facing
+      <select id="facing">
+        <option value="user">Front</option>
+        <option value="environment">Back</option>
+      </select>
+    </label>
 
-      <span class="pill">Status: <b id="status">INIT</b></span>
-      <span class="pill">Score: <b id="score">0</b></span>
-      <span class="pill">FPS: <b id="fps">0</b></span>
-    </div>
-
-    <div class="muted">
-      Controls: jump = real jump or Space, duck = squat or ArrowDown (hold).
-      Calibrate after camera starts: stand still ~1s then click Calibrate.
-    </div>
-
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="game" width="980" height="420"></canvas>
-
-    <div id="hud"></div>
+    <span class="pill">Status: <b id="status">INIT</b></span>
   </div>
 
-  <!-- MediaPipe Tasks Vision -->
-  <script type="module">
-    import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
-    const { PoseLandmarker, FilesetResolver, DrawingUtils } = vision;
+  <video id="video" autoplay playsinline muted></video>
+  <div id="hud"></div>
 
-    // UI
+  <script>
     const btnStart = document.getElementById("btnStart");
-    const btnCal = document.getElementById("btnCal");
+    const btnLoadPose = document.getElementById("btnLoadPose");
     const btnStop = document.getElementById("btnStop");
     const facingSel = document.getElementById("facing");
     const statusEl = document.getElementById("status");
-    const scoreEl = document.getElementById("score");
-    const fpsEl = document.getElementById("fps");
     const hud = document.getElementById("hud");
     const video = document.getElementById("video");
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
 
-    // Logging
-    function log(msg) {
-      hud.textContent = (hud.textContent + msg + "\n").slice(-4000);
-    }
     function setStatus(s) { statusEl.textContent = s; }
+    function log(msg) {
+      hud.textContent += msg + "\n";
+      hud.textContent = hud.textContent.slice(-4000);
+      console.log(msg);
+    }
 
-    // Camera
     let stream = null;
+    let poseLoaded = false;
+
+    window.addEventListener("load", () => {
+      log("JS loaded.");
+      log("isSecureContext: " + window.isSecureContext);
+      log("UserAgent: " + navigator.userAgent);
+    });
+
     async function startCamera() {
-      if (!navigator.mediaDevices?.getUserMedia) {
+      hud.textContent = "";
+      log("Starting camera...");
+      setStatus("CAMERA_START");
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         log("ERROR: getUserMedia not supported.");
+        setStatus("CAMERA_FAIL");
         return;
       }
+
       if (stream) stopCamera();
 
-      const facing = facingSel.value;
-      const constraints = {
-        audio: false,
-        video: {
-          facingMode: { ideal: facing },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
-
       try {
-        setStatus("CAMERA_START");
-        hud.textContent = "";
-        log("Starting camera...");
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            facingMode: { ideal: facingSel.value },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+
         video.srcObject = stream;
         await video.play();
+
         log("Camera OK.");
         setStatus("CAMERA_OK");
-        btnCal.disabled = false;
+
         btnStop.disabled = false;
+        btnLoadPose.disabled = false;
       } catch (e) {
-        log(`ERROR: ${e?.name || "Unknown"} ${e?.message || e}`);
+        log("ERROR: " + (e?.name || "Unknown") + " " + (e?.message || e));
+        log("If you saw no popup, check site permissions or HTTPS.");
         setStatus("CAMERA_FAIL");
       }
     }
@@ -113,319 +102,57 @@
       if (stream) stream.getTracks().forEach(t => t.stop());
       stream = null;
       video.srcObject = null;
-      btnCal.disabled = true;
-      btnStop.disabled = true;
       setStatus("STOPPED");
       log("Stopped camera.");
+      btnStop.disabled = true;
+      btnLoadPose.disabled = true;
     }
 
-    // Pose
-    let poseLandmarker = null;
-    let lastPoseTs = 0;
-
-    async function initPose() {
-      setStatus("POSE_INIT");
-      log("Loading PoseLandmarker...");
-      const fileset = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
-      );
-
-      poseLandmarker = await PoseLandmarker.createFromOptions(fileset, {
-        baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"
-        },
-        runningMode: "VIDEO",
-        numPoses: 1
-      });
-
-      setStatus("POSE_OK");
-      log("PoseLandmarker ready.");
-    }
-
-    // Calibration + gesture detection
-    // We'll use a simple “torso height” and “knee angle” heuristic.
-    let cal = {
-      ready: false,
-      torsoY: null,          // normalized y (0 top - 1 bottom)
-      hipY: null,
-      squatHipDelta: 0.10,   // how much hip goes down to count squat
-      jumpTorsoDelta: 0.06   // how much torso goes up to count jump
-    };
-
-    function getLm(landmarks, idx) {
-      const p = landmarks[idx];
-      return p ? { x: p.x, y: p.y, v: p.visibility ?? 1 } : null;
-    }
-
-    function avgY(...pts) {
-      const ok = pts.filter(p => p && p.v > 0.3);
-      if (!ok.length) return null;
-      return ok.reduce((s, p) => s + p.y, 0) / ok.length;
-    }
-
-    // Indices: MediaPipe pose landmarks
-    const LM = {
-      NOSE: 0,
-      L_SHOULDER: 11, R_SHOULDER: 12,
-      L_HIP: 23, R_HIP: 24,
-      L_KNEE: 25, R_KNEE: 26,
-      L_ANKLE: 27, R_ANKLE: 28
-    };
-
-    function calibrateFromPose(landmarks) {
-      const ls = getLm(landmarks, LM.L_SHOULDER);
-      const rs = getLm(landmarks, LM.R_SHOULDER);
-      const lh = getLm(landmarks, LM.L_HIP);
-      const rh = getLm(landmarks, LM.R_HIP);
-
-      const shoulderY = avgY(ls, rs);
-      const hipY = avgY(lh, rh);
-      if (shoulderY == null || hipY == null) {
-        log("Calibrate failed: body not visible enough.");
+    // Pose engine is loaded only after camera works
+    async function loadPoseEngine() {
+      if (poseLoaded) {
+        log("Pose engine already loaded.");
         return;
       }
 
-      cal.torsoY = (shoulderY + hipY) / 2;
-      cal.hipY = hipY;
-      cal.ready = true;
+      setStatus("POSE_LOADING");
+      log("Loading pose engine from CDN...");
 
-      log(`Calibrated. torsoY=${cal.torsoY.toFixed(3)} hipY=${cal.hipY.toFixed(3)}`);
-      setStatus("RUNNING");
+      try {
+        const vision = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14");
+        const { PoseLandmarker, FilesetResolver } = vision;
+
+        const fileset = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+        );
+
+        const landmarker = await PoseLandmarker.createFromOptions(fileset, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"
+          },
+          runningMode: "VIDEO",
+          numPoses: 1
+        });
+
+        poseLoaded = true;
+        setStatus("POSE_OK");
+        log("Pose engine OK.");
+        log("Next: I can attach runner game + jump/duck once pose load is confirmed.");
+
+        // Optional quick sanity check
+        const now = performance.now();
+        const res = landmarker.detectForVideo(video, now);
+        log("Pose detected: " + (!!res?.landmarks?.[0]));
+      } catch (e) {
+        log("POSE LOAD ERROR: " + (e?.message || e));
+        log("This usually means CDN/model access is blocked on your network.");
+        setStatus("POSE_FAIL");
+      }
     }
 
-    function detectActions(landmarks) {
-      // Returns { jump: boolean, duck: boolean }
-      if (!cal.ready) return { jump: false, duck: false };
-
-      const ls = getLm(landmarks, LM.L_SHOULDER);
-      const rs = getLm(landmarks, LM.R_SHOULDER);
-      const lh = getLm(landmarks, LM.L_HIP);
-      const rh = getLm(landmarks, LM.R_HIP);
-
-      const torsoY = avgY(ls, rs, lh, rh);
-      const hipY = avgY(lh, rh);
-      if (torsoY == null || hipY == null) return { jump: false, duck: false };
-
-      const jump = (cal.torsoY - torsoY) > cal.jumpTorsoDelta; // torso moved up => y smaller
-      const duck = (hipY - cal.hipY) > cal.squatHipDelta;      // hips moved down => y larger
-
-      return { jump, duck };
-    }
-
-    // Runner game
-    const G = {
-      t: 0,
-      score: 0,
-      speed: 6,
-      gravity: 0.9,
-      groundY: 340,
-      player: { x: 120, y: 340, vy: 0, h: 46, w: 30, duck: false },
-      obstacles: [],
-      spawnCd: 0,
-      over: false
-    };
-
-    function resetGame() {
-      G.t = 0;
-      G.score = 0;
-      G.speed = 6;
-      G.player.y = G.groundY;
-      G.player.vy = 0;
-      G.player.duck = false;
-      G.obstacles = [];
-      G.spawnCd = 0;
-      G.over = false;
-      scoreEl.textContent = "0";
-      setStatus(cal.ready ? "RUNNING" : "READY");
-      log("Game reset.");
-    }
-
-    function spawnObstacle() {
-      // Two types: low (needs jump) and high (needs duck)
-      const type = Math.random() < 0.65 ? "low" : "high";
-      const w = type === "low" ? 22 : 40;
-      const h = type === "low" ? 48 : 26;
-      const y = type === "low" ? G.groundY : (G.groundY - 70);
-      G.obstacles.push({ x: canvas.width + 20, y, w, h, type });
-    }
-
-    function aabb(ax, ay, aw, ah, bx, by, bw, bh) {
-      return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
-    }
-
-    // Keyboard fallback
-    const keys = { space: false, down: false };
-    window.addEventListener("keydown", (e) => {
-      if (e.code === "Space") keys.space = true;
-      if (e.code === "ArrowDown") keys.down = true;
-      if (e.code === "KeyR") resetGame();
-    });
-    window.addEventListener("keyup", (e) => {
-      if (e.code === "Space") keys.space = false;
-      if (e.code === "ArrowDown") keys.down = false;
-    });
-
-    function updateGame(actions) {
-      if (G.over) return;
-
-      // Difficulty ramp
-      G.t += 1;
-      if (G.t % 240 === 0) G.speed += 0.6;
-
-      // Player actions
-      const wantJump = actions.jump || keys.space;
-      const wantDuck = actions.duck || keys.down;
-
-      G.player.duck = wantDuck && (G.player.y >= G.groundY);
-
-      if (wantJump && G.player.y >= G.groundY) {
-        G.player.vy = -14; // jump impulse
-      }
-
-      // Physics
-      G.player.vy += G.gravity;
-      G.player.y += G.player.vy;
-      if (G.player.y > G.groundY) {
-        G.player.y = G.groundY;
-        G.player.vy = 0;
-      }
-
-      // Spawn
-      G.spawnCd -= 1;
-      if (G.spawnCd <= 0) {
-        spawnObstacle();
-        G.spawnCd = 70 + Math.floor(Math.random() * 70); // frames
-      }
-
-      // Move obstacles
-      for (const ob of G.obstacles) ob.x -= G.speed;
-      G.obstacles = G.obstacles.filter(ob => ob.x > -100);
-
-      // Collision box (duck shrinks height)
-      const ph = G.player.duck ? 26 : 46;
-      const py = G.player.duck ? (G.player.y - 26) : (G.player.y - 46);
-
-      for (const ob of G.obstacles) {
-        const hit = aabb(G.player.x, py, G.player.w, ph, ob.x, ob.y - ob.h, ob.w, ob.h);
-        if (hit) {
-          G.over = true;
-          setStatus("GAME_OVER (press R)");
-          log("Game over. Press R to restart.");
-          break;
-        }
-      }
-
-      // Score
-      G.score += 1;
-      scoreEl.textContent = String(Math.floor(G.score / 6));
-    }
-
-    function drawGame(actions) {
-      // Background
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Ground
-      ctx.fillStyle = "#222";
-      ctx.fillRect(0, G.groundY + 10, canvas.width, 4);
-
-      // Obstacles
-      for (const ob of G.obstacles) {
-        ctx.fillStyle = ob.type === "low" ? "#e5e5e5" : "#bdbdbd";
-        ctx.fillRect(ob.x, ob.y - ob.h, ob.w, ob.h);
-      }
-
-      // Player
-      const ph = G.player.duck ? 26 : 46;
-      const py = G.player.duck ? (G.player.y - 26) : (G.player.y - 46);
-      ctx.fillStyle = "#8bd3ff";
-      ctx.fillRect(G.player.x, py, G.player.w, ph);
-
-      // Small status indicator
-      ctx.fillStyle = "#fff";
-      ctx.font = "16px system-ui";
-      const a = [];
-      if (!cal.ready) a.push("Not calibrated");
-      if (actions.jump) a.push("JUMP");
-      if (actions.duck) a.push("DUCK");
-      if (G.over) a.push("GAME OVER");
-      ctx.fillText(a.join(" | "), 16, 28);
-    }
-
-    // Pose loop
-    let lastFpsT = performance.now();
-    let fps = 0;
-
-    async function loop() {
-      requestAnimationFrame(loop);
-
-      // FPS calc
-      const now = performance.now();
-      const dt = now - lastFpsT;
-      if (dt >= 500) {
-        fps = Math.round(1000 / ((dt / 1) / 1)); // coarse, good enough for display
-        fpsEl.textContent = String(fps);
-        lastFpsT = now;
-      }
-
-      // If no pose engine or no video, still run game with keyboard
-      let actions = { jump: false, duck: false };
-
-      if (poseLandmarker && video.readyState >= 2 && !G.over) {
-        // throttle pose to reduce CPU
-        if (now - lastPoseTs > 33) {
-          lastPoseTs = now;
-          const res = poseLandmarker.detectForVideo(video, now);
-          const lm = res?.landmarks?.[0];
-          if (lm) actions = detectActions(lm);
-        }
-      }
-
-      updateGame(actions);
-      drawGame(actions);
-    }
-
-    // Buttons
-    btnStart.addEventListener("click", async () => {
-      await startCamera();
-      if (!poseLandmarker) await initPose();
-      setStatus("READY");
-      resetGame();
-      // start loop once
-      if (!window.__loopStarted) {
-        window.__loopStarted = true;
-        requestAnimationFrame(loop);
-      }
-    });
-
-    btnCal.addEventListener("click", async () => {
-      if (!poseLandmarker) {
-        log("Pose engine not ready.");
-        return;
-      }
-      if (video.readyState < 2) {
-        log("Video not ready.");
-        return;
-      }
-      // Take a snapshot pose and calibrate
-      const now = performance.now();
-      const res = poseLandmarker.detectForVideo(video, now);
-      const lm = res?.landmarks?.[0];
-      if (!lm) {
-        log("Calibrate failed: no pose detected. Make sure full body is visible.");
-        return;
-      }
-      calibrateFromPose(lm);
-      resetGame();
-    });
-
-    btnStop.addEventListener("click", () => {
-      stopCamera();
-    });
-
-    // First message
-    log("Tip: Serve via HTTPS (GitHub Pages). Start camera, then Calibrate.");
+    btnStart.addEventListener("click", startCamera);
+    btnStop.addEventListener("click", stopCamera);
+    btnLoadPose.addEventListener("click", loadPoseEngine);
   </script>
 </body>
 </html>
