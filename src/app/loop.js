@@ -143,9 +143,7 @@ export class GameLoop {
       if (result.lives !== undefined) {
         this.hudView.setLives(result.lives);
       }
-      if (result.heartsCollected !== undefined) {
-        this.hudView.setHeartsCollected(result.heartsCollected);
-      }
+      // heartsCollected는 내부적으로만 추적하고 UI에는 표시하지 않음 (아이템을 먹으면 lives가 증가)
 
       // Render (캘리브레이션 모드에서는 빈 화면만)
       if (!this.calibrationMode) {
@@ -276,14 +274,8 @@ export class GameLoop {
         this.hudView.log("✅ 얼굴 사진 촬영 완료!");
         console.log('Face image set in game state:', faceImage.width, 'x', faceImage.height);
         
-        // 디버깅용 얼굴 미리보기에 표시
-        const facePreviewEl = document.getElementById('facePreview');
-        const facePreviewImg = document.getElementById('facePreviewImg');
-        if (facePreviewEl && facePreviewImg) {
-          facePreviewImg.src = faceImage.src;
-          facePreviewEl.style.display = 'block';
-          console.log('Face preview displayed');
-        }
+        // 디버깅용 얼굴 미리보기는 버튼 클릭 시에만 표시 (자동 표시 안 함)
+        // 이 메서드는 자동 호출되므로 미리보기 표시 안 함
         
         // 콜백 호출 (사진만 촬영)
         if (this.onPhotoCapture) {
@@ -314,14 +306,8 @@ export class GameLoop {
           this.hudView.log("✅ Face image loaded!");
           console.log('Face image set in game state:', faceImage.width, 'x', faceImage.height);
           
-          // 디버깅용 얼굴 미리보기에 표시
-          const facePreviewEl = document.getElementById('facePreview');
-          const facePreviewImg = document.getElementById('facePreviewImg');
-          if (facePreviewEl && facePreviewImg) {
-            facePreviewImg.src = faceImage.src;
-            facePreviewEl.style.display = 'block';
-            console.log('Face preview displayed');
-          }
+          // 디버깅용 얼굴 미리보기는 버튼 클릭 시에만 표시 (자동 표시 안 함)
+          // 이 메서드는 자동 호출되므로 미리보기 표시 안 함
           
           // 캘리브레이션 수행
           this.performCalibration(landmarks, faceImage);

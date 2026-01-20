@@ -92,12 +92,6 @@ export class App {
     if (this.buttons.takePhoto) {
       this.buttons.takePhoto.addEventListener("click", () => this.takePhoto());
     }
-    if (this.buttons.calibrate) {
-      this.buttons.calibrate.addEventListener("click", () => this.calibrate());
-    }
-    if (this.buttons.stop) {
-      this.buttons.stop.addEventListener("click", () => this.stopCamera());
-    }
     if (this.buttons.test) {
       this.buttons.test.addEventListener("click", () => this.poseTestView.toggle());
     }
@@ -173,12 +167,6 @@ export class App {
       this.hudView.log("✅ Camera OK.");
       this.hudView.setStatus("CAMERA_OK");
 
-      if (this.buttons.stop) {
-        this.buttons.stop.disabled = false;
-      }
-      if (this.buttons.loadPose) {
-        this.buttons.loadPose.disabled = false;
-      }
       console.log('[startCamera] Success');
       
       // 카메라 시작 후 자동으로 포즈 엔진 로드
@@ -221,10 +209,9 @@ export class App {
     this.hudView.setStatus("STOPPED");
     this.hudView.log("Stopped camera.");
 
-    this.buttons.stop.disabled = true;
-    this.buttons.loadPose.disabled = true;
-    this.buttons.takePhoto.disabled = true;
-    this.buttons.calibrate.disabled = true;
+    if (this.buttons.takePhoto) {
+      this.buttons.takePhoto.disabled = true;
+    }
 
     this.gameLoop.stop();
   }
@@ -249,13 +236,12 @@ export class App {
       this.hudView.setStatus("POSE_LOADED");
 
       this.buttons.takePhoto.disabled = false;
-      this.buttons.calibrate.disabled = false;
       if (!this.gameLoop.isRunning()) {
         this.gameLoop.startForCalibration();
         this.hudView.setStatus("READY");
         this.hudView.log("Ready! Steps:");
         this.hudView.log("1. 📸 Take Photo - Capture your face for character");
-        this.hudView.log("2. ✋ Wave hand OR click 'Calibrate' - Set pose calibration");
+        this.hudView.log("2. ✋ Wave left hand - Start game (calibrate)");
       }
     } catch (e) {
       this.hudView.log("ERROR loading pose: " + ((e && e.message) || e));
@@ -299,13 +285,18 @@ export class App {
             hasStateImage: !!state.faceImage
           });
           
-          // 디버깅용 얼굴 미리보기에 표시
+          // 디버깅용 얼굴 미리보기에 표시 (테스트 패널이 열려있을 때만)
           const facePreviewEl = document.getElementById('facePreview');
           const facePreviewImg = document.getElementById('facePreviewImg');
           if (facePreviewEl && facePreviewImg) {
             facePreviewImg.src = faceImage.src;
-            facePreviewEl.style.display = 'block';
-            console.log('Face preview displayed');
+            // 테스트 패널이 열려있을 때만 표시
+            if (this.poseTestView && this.poseTestView.visible) {
+              facePreviewEl.style.display = 'block';
+              console.log('Face preview displayed (test panel open)');
+            } else {
+              facePreviewEl.style.display = 'none';
+            }
           }
           
           // 게임이 이미 실행 중이면 즉시 반영
@@ -433,9 +424,7 @@ export class App {
     if (this.hudView.livesEl) {
       this.hudView.setLives(3);
     }
-    if (this.hudView.itemsEl) {
-      this.hudView.setHeartsCollected(0);
-    }
+    // heartsCollected는 내부적으로만 추적 (UI 표시 안 함)
     this.hudView.log("Game reset.");
     
     // 게임 오버 후 재시작 시 캘리브레이션 모드로 설정하여 사진 다시 찍기 가능하게 함

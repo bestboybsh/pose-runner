@@ -5,10 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pose Runner (Stable)</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 16px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    button, select { font-size: 16px; padding: 10px 12px; }
-    #wrap { display: grid; gap: 12px; grid-template-columns: 1fr; max-width: 1400px; }
+    body { 
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; 
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    h2 {
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      margin-top: 0;
+    }
+    .row { 
+      display: flex; 
+      gap: 10px; 
+      flex-wrap: wrap; 
+      align-items: center;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    button, select { 
+      font-size: 16px; 
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: #ccc;
+    }
+    select {
+      background: white;
+      color: #333;
+      border: 2px solid #ddd;
+    }
+    #wrap { 
+      display: grid; 
+      gap: 12px; 
+      grid-template-columns: 1fr; 
+      max-width: 1400px;
+      margin: 0 auto;
+    }
     .game-area { position: relative; display: inline-block; }
     .video-container {
       position: absolute;
@@ -42,15 +92,55 @@
     #game { 
       width: min(92vw, 980px); 
       height: auto; 
-      border-radius: 12px; 
+      border-radius: 16px; 
       background: #111; 
       display: block;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      border: 3px solid rgba(255,255,255,0.1);
     }
-    #hud { white-space: pre-wrap; background: #f6f6f6; padding: 12px; border-radius: 12px; max-height: 200px; overflow-y: auto; }
-    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #eee; margin-right: 6px; }
-    .muted { color: #666; }
-    #leaderboard { background: #f6f6f6; padding: 12px; border-radius: 12px; margin-top: 12px; display: none; }
-    #leaderboard h3 { margin-top: 0; }
+    #hud { 
+      white-space: pre-wrap; 
+      background: rgba(255, 255, 255, 0.95); 
+      padding: 16px; 
+      border-radius: 12px; 
+      max-height: 200px; 
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+    .pill { 
+      display: inline-block; 
+      padding: 6px 14px; 
+      border-radius: 999px; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      margin-right: 8px;
+      font-weight: 500;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .pill b {
+      font-weight: 700;
+    }
+    .muted { 
+      color: rgba(255,255,255,0.9);
+      background: rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+    #leaderboard { 
+      background: rgba(255, 255, 255, 0.95); 
+      padding: 16px; 
+      border-radius: 12px; 
+      margin-top: 12px; 
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    #leaderboard h3 { 
+      margin-top: 0;
+      color: #667eea;
+    }
     
     /* 테스트 패널을 화면에 항상 표시되도록 */
     .content-grid {
@@ -120,8 +210,6 @@
   <div id="wrap">
     <div class="row">
       <button id="btnTakePhoto" disabled>📸 Take Photo</button>
-      <button id="btnCal" disabled>Calibrate</button>
-      <button id="btnStop" disabled>Stop</button>
       <button id="btnTest">테스트 패널 (T)</button>
       <button id="btnMusic" title="Toggle Music">🔊 Music</button>
 
@@ -134,9 +222,7 @@
       </label>
 
       <span class="pill">Status: <b id="status">INIT</b></span>
-      <span class="pill">Time: <b id="score">0</b>s</span>
       <span class="pill">❤️ Lives: <b id="lives">3</b></span>
-      <span class="pill">💖 Hearts: <b id="items">0</b></span>
       <span class="pill">FPS: <b id="fps">0</b></span>
     </div>
 
@@ -197,8 +283,8 @@
             start: null,  // 자동 시작으로 인해 버튼 제거
             loadPose: null,  // 자동 시작으로 인해 버튼 제거
             takePhoto: document.getElementById("btnTakePhoto"),
-            calibrate: document.getElementById("btnCal"),
-            stop: document.getElementById("btnStop"),
+            calibrate: null,  // Calibrate 버튼 제거
+            stop: null,  // Stop 버튼 제거
             test: document.getElementById("btnTest"),
             music: document.getElementById("btnMusic")
           },

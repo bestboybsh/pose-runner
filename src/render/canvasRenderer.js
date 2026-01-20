@@ -223,25 +223,57 @@ export class CanvasRenderer extends RendererBase {
     ].filter(Boolean).join(" | ");
     this.ctx.fillText(label, 16, 28);
     
-    // 목숨과 시간 표시 (게임 화면에)
+    // 목숨과 시간 표시 (게임 화면에 - 더 예쁘게)
     if (!gameOver) {
       this.ctx.save();
-      this.ctx.fillStyle = "#fff";
-      this.ctx.font = "bold 20px system-ui";
       
-      // 배경 박스 (가독성을 위해)
-      this.ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
-      this.ctx.fillRect(16, this.canvas.height - 60, 200, 45);
+      // 목숨 표시 (왼쪽 하단) - 그라데이션 배경
+      const livesX = 20;
+      const livesY = this.canvas.height - 50;
+      const livesW = 140;
+      const livesH = 40;
       
-      // 목숨 표시
-      this.ctx.fillStyle = "#ff1744";
-      this.ctx.font = "bold 20px system-ui";
-      this.ctx.fillText(`❤️ ${state.lives}`, 24, this.canvas.height - 35);
+      // 배경 그라데이션
+      const livesGradient = this.ctx.createLinearGradient(livesX, livesY, livesX, livesY + livesH);
+      livesGradient.addColorStop(0, 'rgba(255, 23, 68, 0.8)');
+      livesGradient.addColorStop(1, 'rgba(211, 0, 0, 0.8)');
+      this.ctx.fillStyle = livesGradient;
+      this.ctx.fillRect(livesX, livesY, livesW, livesH);
       
-      // 시간 표시
-      this.ctx.fillStyle = "#fff";
-      this.ctx.font = "bold 20px system-ui";
-      this.ctx.fillText(`⏱️ ${state.score}s`, 24, this.canvas.height - 15);
+      // 테두리
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(livesX, livesY, livesW, livesH);
+      
+      // 텍스트
+      this.ctx.fillStyle = "#ffffff";
+      this.ctx.font = "bold 22px system-ui";
+      this.ctx.textAlign = "left";
+      this.ctx.fillText(`❤️ ${state.lives}`, livesX + 12, livesY + 28);
+      
+      // 점수 표시 (오른쪽 상단) - 그라데이션 배경
+      const scoreX = this.canvas.width - 160;
+      const scoreY = 20;
+      const scoreW = 140;
+      const scoreH = 40;
+      
+      // 배경 그라데이션
+      const scoreGradient = this.ctx.createLinearGradient(scoreX, scoreY, scoreX, scoreY + scoreH);
+      scoreGradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+      scoreGradient.addColorStop(1, 'rgba(118, 75, 162, 0.8)');
+      this.ctx.fillStyle = scoreGradient;
+      this.ctx.fillRect(scoreX, scoreY, scoreW, scoreH);
+      
+      // 테두리
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(scoreX, scoreY, scoreW, scoreH);
+      
+      // 텍스트
+      this.ctx.fillStyle = "#ffffff";
+      this.ctx.font = "bold 22px system-ui";
+      this.ctx.textAlign = "left";
+      this.ctx.fillText(`⏱️ ${state.score}s`, scoreX + 12, scoreY + 28);
       
       this.ctx.restore();
     }

@@ -23,8 +23,19 @@ export class PoseTestView {
   toggle() {
     if (this.visible) {
       this.hide();
+      // 테스트 패널이 닫히면 얼굴 미리보기도 숨김
+      const facePreviewEl = document.getElementById('facePreview');
+      if (facePreviewEl) {
+        facePreviewEl.style.display = 'none';
+      }
     } else {
       this.show();
+      // 테스트 패널이 열리면 얼굴 미리보기도 표시 (이미 찍은 사진이 있는 경우)
+      const facePreviewEl = document.getElementById('facePreview');
+      const facePreviewImg = document.getElementById('facePreviewImg');
+      if (facePreviewEl && facePreviewImg && facePreviewImg.src) {
+        facePreviewEl.style.display = 'block';
+      }
     }
   }
 
