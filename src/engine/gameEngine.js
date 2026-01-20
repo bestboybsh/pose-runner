@@ -152,9 +152,10 @@ export class GameEngine {
       state.score = elapsedSeconds;
     }
     
-    // Speed increase over time
+    // Speed increase over time (최대 3배까지)
     if (state.t % GAME_CONFIG.SPEED_INTERVAL === 0) {
-      state.speed += GAME_CONFIG.SPEED_INCREMENT;
+      const newSpeed = state.speed + GAME_CONFIG.SPEED_INCREMENT;
+      state.speed = Math.min(newSpeed, GAME_CONFIG.MAX_SPEED);  // 최대 속도 제한
     }
     
     // 배경 스크롤 업데이트 (달려나가는 느낌)
