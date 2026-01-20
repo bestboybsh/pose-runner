@@ -98,8 +98,10 @@ export class GameLoop {
         this.skeletonRenderer.clear();
       }
 
-      // Hand wave detection - 오른손/왼손 구분
-      if (this.handWaveDetector && landmarks && this.calibrationMode) {
+      // Hand wave detection - 오른손/왼손 구분 (캘리브레이션 모드 또는 게임 오버 상태)
+      const gameState = this.engine.getState();
+      const isGameOver = gameState && gameState.over;
+      if (this.handWaveDetector && landmarks && (this.calibrationMode || isGameOver)) {
         const waveResult = this.handWaveDetector.detectWave(landmarks);
         if (waveResult.detected) {
           if (waveResult.hand === 'right') {
@@ -207,9 +209,10 @@ export class GameLoop {
             }
           }
           
-          this.hudView.setStatus("GAME_OVER (R)");
-          this.hudView.log("Game over. Press R to restart.");
-          this.hudView.log("💡 Tip: You can take a new photo before restarting!");
+          this.hudView.setStatus("GAME_OVER");
+          this.hudView.log("Game over! Press R to restart, or:");
+          this.hudView.log("✋ Wave right hand → Take new photo");
+          this.hudView.log("👈 Wave left hand → Calibrate & Start game");
           
           // 게임 오버 시 리더보드 표시 (점수 포함)
           if (this.leaderboardView && result.score !== undefined) {

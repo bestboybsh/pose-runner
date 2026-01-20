@@ -439,8 +439,8 @@ export class App {
       
       this.hudView.setStatus("READY");
       this.hudView.log("Ready! You can:");
-      this.hudView.log("1. 📸 Take Photo - Capture a new face (optional)");
-      this.hudView.log("2. ✋ Wave hand OR click 'Calibrate' - Start game");
+      this.hudView.log("✋ Wave right hand → Take new photo");
+      this.hudView.log("👈 Wave left hand → Calibrate & Start game");
     }
   }
 

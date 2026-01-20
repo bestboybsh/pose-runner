@@ -1,10 +1,10 @@
 // Game constants
 export const GAME_CONFIG = {
-  INITIAL_SPEED: 6,
-  SPEED_INCREMENT: 0.6,
+  INITIAL_SPEED: 8,  // 게임 속도 증가 (6 -> 8)
+  SPEED_INCREMENT: 0.8,  // 속도 증가량 증가 (0.6 -> 0.8)
   SPEED_INTERVAL: 240,
   GRAVITY: 0.9,
-  JUMP_VELOCITY: -14,
+  JUMP_VELOCITY: -18,  // 점프 높이 증가 (더 높고 멀리 점프) (-14 -> -18)
   GROUND_Y: 340,
   CANVAS_WIDTH: 980,
   CANVAS_HEIGHT: 420,
