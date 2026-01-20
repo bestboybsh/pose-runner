@@ -30,9 +30,10 @@ export class ModalView {
   show(content) {
     if (this.modalEl) {
       if (typeof content === 'string') {
-        this.modalEl.querySelector('.modal-content')?.appendChild(
-          document.createTextNode(content)
-        );
+        const contentEl = this.modalEl.querySelector('.modal-content');
+        if (contentEl) {
+          contentEl.appendChild(document.createTextNode(content));
+        }
       }
       this.modalEl.style.display = 'flex';
     }

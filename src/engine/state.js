@@ -1,4 +1,4 @@
-import { GAME_CONFIG } from './constants.js';
+import { GAME_CONFIG, LIVES_CONFIG } from './constants.js';
 
 // Game state management
 export class GameState {
@@ -7,12 +7,16 @@ export class GameState {
   }
 
   reset() {
+    // 얼굴 이미지는 reset 시 유지 (게임 재시작해도 얼굴 유지)
+    const savedFaceImage = this.faceImage;
+    
     this.t = 0;
-    this.timeScore = 0;  // 시간 기반 점수
-    this.itemScore = 0;  // 아이템 점수
-    this.score = 0;  // 총점
-    this.itemsCollected = 0;
+    this.score = 0;  // 시간 기반 점수 (생존 시간)
+    this.startTime = null;  // 게임 시작 시간 (밀리초)
     this.speed = GAME_CONFIG.INITIAL_SPEED;
+    this.bgOffset = 0;  // 배경 스크롤 오프셋
+    this.lives = LIVES_CONFIG.START;  // 시작 목숨
+    this.heartsCollected = 0;  // 수집한 하트 개수
     this.player = {
       x: GAME_CONFIG.PLAYER.X,
       y: GAME_CONFIG.GROUND_Y,
@@ -26,7 +30,9 @@ export class GameState {
     this.spawnCd = 0;
     this.itemSpawnCd = 0;
     this.over = false;
-    // faceImage는 reset 시 유지 (게임 재시작해도 얼굴 유지)
+    
+    // 얼굴 이미지 복원
+    this.faceImage = savedFaceImage;
   }
 
   setFaceImage(image) {

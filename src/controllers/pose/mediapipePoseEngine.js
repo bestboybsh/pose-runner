@@ -41,7 +41,7 @@ export class MediaPipePoseEngine extends PoseEngineBase {
       return null;
     }
     const res = this.poseLandmarker.detectForVideo(video, timestamp);
-    return res?.landmarks?.[0] || null;
+    return (res && res.landmarks && res.landmarks[0]) || null;
   }
 
   isLoaded() {

@@ -13,8 +13,8 @@ export class PoseController {
   }
 
   getLm(landmarks, idx) {
-    const p = landmarks?.[idx];
-    return p ? { x: p.x, y: p.y, v: p.visibility ?? 1 } : null;
+    const p = (landmarks && landmarks[idx]) || null;
+    return p ? { x: p.x, y: p.y, v: (p.visibility !== undefined ? p.visibility : 1) } : null;
   }
 
   avgY(...pts) {

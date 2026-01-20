@@ -10,22 +10,23 @@ export class HandWaveDetector {
   }
 
   getWrist(landmarks, wristIdx) {
-    const wrist = landmarks?.[wristIdx];
+    const wrist = (landmarks && landmarks[wristIdx]) || null;
     return wrist && wrist.visibility > 0.3 ? { x: wrist.x, y: wrist.y } : null;
   }
 
   detectWave(landmarks) {
-    if (!landmarks || landmarks.length === 0) return false;
+    if (!landmarks || landmarks.length === 0) return { detected: false, hand: null };
 
     const now = performance.now();
     if (now - this.lastWaveTime < this.waveCooldown) {
-      return false;  // 쿨다운 중
+      return { detected: false, hand: null };  // 쿨다운 중
     }
 
     const lWrist = this.getWrist(landmarks, POSE_LANDMARKS.L_WRIST);
     const rWrist = this.getWrist(landmarks, POSE_LANDMARKS.R_WRIST);
 
-    let detected = false;
+    let leftDetected = false;
+    let rightDetected = false;
 
     // 왼쪽 손 흔들기 감지
     if (lWrist) {
@@ -45,14 +46,14 @@ export class HandWaveDetector {
           // 속도 체크 (변화량)
           const speed = Math.abs(recent[recent.length - 1].x - recent[0].x);
           if (speed > HAND_WAVE_CONFIG.WAVE_MIN_SPEED) {
-            detected = true;
+            leftDetected = true;
           }
         }
       }
     }
 
     // 오른쪽 손 흔들기 감지
-    if (!detected && rWrist) {
+    if (rWrist) {
       this.rWristHistory.push(rWrist);
       if (this.rWristHistory.length > HAND_WAVE_CONFIG.HISTORY_SIZE) {
         this.rWristHistory.shift();
@@ -68,18 +69,24 @@ export class HandWaveDetector {
         if (range > HAND_WAVE_CONFIG.WAVE_THRESHOLD) {
           const speed = Math.abs(recent[recent.length - 1].x - recent[0].x);
           if (speed > HAND_WAVE_CONFIG.WAVE_MIN_SPEED) {
-            detected = true;
+            rightDetected = true;
           }
         }
       }
     }
 
-    if (detected) {
+    if (leftDetected || rightDetected) {
       this.lastWaveTime = now;
       this.lWristHistory = [];
       this.rWristHistory = [];
+      
+      if (leftDetected) {
+        return { detected: true, hand: 'left' };
+      } else {
+        return { detected: true, hand: 'right' };
+      }
     }
 
-    return detected;
+    return { detected: false, hand: null };
   }
 }

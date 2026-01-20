@@ -1,11 +1,12 @@
 // HUD (Heads-Up Display) view manager
 export class HudView {
-  constructor(statusEl, scoreEl, fpsEl, hudEl, itemsEl = null) {
+  constructor(statusEl, scoreEl, fpsEl, hudEl, itemsEl = null, livesEl = null) {
     this.statusEl = statusEl;
     this.scoreEl = scoreEl;
     this.fpsEl = fpsEl;
     this.hudEl = hudEl;
     this.itemsEl = itemsEl;
+    this.livesEl = livesEl;
   }
 
   setStatus(status) {
@@ -20,10 +21,21 @@ export class HudView {
     }
   }
 
-  setItemsCollected(count, itemScore) {
-    if (this.itemsEl) {
-      this.itemsEl.textContent = `${count} (+${itemScore})`;
+  setLives(lives) {
+    if (this.livesEl) {
+      this.livesEl.textContent = String(lives);
     }
+  }
+
+  setHeartsCollected(count) {
+    if (this.itemsEl) {
+      this.itemsEl.textContent = String(count);
+    }
+  }
+
+  setItemsCollected(count, itemScore) {
+    // 하위 호환성을 위해 유지
+    this.setHeartsCollected(count);
   }
 
   setFPS(fps) {

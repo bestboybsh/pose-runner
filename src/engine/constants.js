@@ -10,21 +10,20 @@ export const GAME_CONFIG = {
   CANVAS_HEIGHT: 420,
   PLAYER: {
     X: 120,
-    W: 30,
-    H_STANDING: 46,
-    H_DUCKING: 26
+    W: 50,  // 캐릭터 너비 증가 (30 -> 50)
+    H_STANDING: 75,  // 서 있을 때 높이 증가 (46 -> 75)
+    H_DUCKING: 45  // 숙일 때 높이 증가 (26 -> 45)
   },
   OBSTACLE: {
     SPAWN_MIN_CD: 70,
     SPAWN_MAX_CD: 140,
-    LOW_W: 22,
-    LOW_H: 48,
-    HIGH_W: 40,
-    HIGH_H: 26,
+    LOW_W: 35,  // 낮은 장애물 너비 증가 (22 -> 35)
+    LOW_H: 75,  // 낮은 장애물 높이 증가 (48 -> 75)
+    HIGH_W: 60,  // 높은 장애물 너비 증가 (40 -> 60)
+    HIGH_H: 40,  // 높은 장애물 높이 증가 (26 -> 40)
     HIGH_OFFSET: 70,
-    DUCK_W: 40,  // 숙여야 하는 장애물 (넓은)
-    DUCK_H: 150,  // 중간부터 위까지 차지
-    DUCK_Y_START: 220,  // 중간 높이부터 시작
+    DUCK_W: 75,  // 숙여야 하는 장애물 너비 증가 (50 -> 75)
+    DUCK_H: 45,  // 숙여야 하는 장애물 높이 증가 (30 -> 45)
     LOW_PROBABILITY: 0.50,  // low: 50%, high: 25%, duck: 25%
     HIGH_PROBABILITY: 0.75  // high가 나올 확률 (나머지 중 75%)
   }
@@ -59,12 +58,17 @@ export const CALIBRATION = {
 };
 
 export const ITEM_CONFIG = {
-  SPAWN_CHANCE: 0.15,  // 아이템 생성 확률
-  SPAWN_MIN_CD: 50,
-  SPAWN_MAX_CD: 120,
-  W: 20,
-  H: 20,
+  SPAWN_MIN_CD: 900,  // 30초에 1-2개: 900~1800프레임 (60fps 기준 15~30초)
+  SPAWN_MAX_CD: 1800,
+  W: 24,  // 하트 크기
+  H: 24,
   Y_MIN: 200,  // 아이템 높이 범위
   Y_MAX: 320,
-  SCORE_VALUE: 10  // 아이템 당 점수
+  HEART_VALUE: 1  // 하트 당 목숨 증가량
+};
+
+export const LIVES_CONFIG = {
+  START: 3,  // 시작 목숨
+  MAX: 100,  // 최대 목숨
+  DECREASE_ON_HIT: 1  // 충돌 시 목숨 감소량
 };
