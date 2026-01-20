@@ -1,4 +1,5 @@
 import { HandWaveDetector } from '../controllers/pose/handWaveDetector.js';
+import { GAME_CONFIG } from '../engine/constants.js';
 
 // Game loop manager
 export class GameLoop {
@@ -141,7 +142,7 @@ export class GameLoop {
         if (this.musicService && this.musicService.getIsPlaying()) {
           const gameState = this.engine.getState();
           const currentSpeed = gameState.speed;
-          const initialSpeed = 8; // GAME_CONFIG.INITIAL_SPEED
+          const initialSpeed = GAME_CONFIG.INITIAL_SPEED; // 동적으로 가져오기
           
           // 속도에 직접 비례하여 재생 속도 계산
           // 예: 초기 속도 8, 현재 속도 16 → 재생 속도 2.0배 (속도가 2배면 음악도 2배)

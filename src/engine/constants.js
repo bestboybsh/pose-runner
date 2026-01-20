@@ -2,8 +2,8 @@
 export const GAME_CONFIG = {
   INITIAL_SPEED: 8,  // 게임 속도 증가 (6 -> 8)
   MAX_SPEED: 24,  // 최대 속도 (초기 속도의 3배) (8 * 3 = 24)
-  SPEED_INCREMENT: 1.0,  // 속도 증가량 증가 (더 빠르게 증가) (0.8 -> 1.0)
-  SPEED_INTERVAL: 180,  // 속도 증가 간격 감소 (더 자주 증가) (240 -> 180, 약 3초마다)
+  SPEED_INCREMENT: 1.5,  // 속도 증가량 증가 (더 빠르게 증가) (1.0 -> 1.5)
+  SPEED_INTERVAL: 120,  // 속도 증가 간격 감소 (더 자주 증가) (180 -> 120, 약 2초마다)
   GRAVITY: 0.9,
   JUMP_VELOCITY: -18,  // 점프 높이 증가 (더 높고 멀리 점프) (-14 -> -18)
   GROUND_Y: 340,
