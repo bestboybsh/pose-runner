@@ -147,8 +147,8 @@ export class GameLoop {
           // 속도에 직접 비례하여 재생 속도 계산
           // 예: 초기 속도 8, 현재 속도 16 → 재생 속도 2.0배 (속도가 2배면 음악도 2배)
           const playbackRate = currentSpeed / initialSpeed;
-          // 재생 속도 제한 (0.5 ~ 3.0배) - 최대 3배속까지, 너무 빠르거나 느리면 음질이 떨어질 수 있음
-          const clampedRate = Math.max(0.5, Math.min(3.0, playbackRate));
+          // 재생 속도 제한 (0.5 ~ 10.0배) - 최대 10배속까지, 너무 빠르거나 느리면 음질이 떨어질 수 있음
+          const clampedRate = Math.max(0.5, Math.min(10.0, playbackRate));
           
           this.musicService.setPlaybackRate(clampedRate);
         }
