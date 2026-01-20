@@ -206,12 +206,13 @@ export class GameEngine {
       if (ob.hit) continue;
       
       if (checkPlayerObstacleCollision(playerRect, ob)) {
-        // duck 타입 장애물은 서 있을 때만 충돌 (숙이면 통과)
+        // duck 타입 장애물은 숙였을 때만 통과, 서 있거나 점프 중이면 충돌
         if (ob.type === "duck") {
-          if (state.player.duck) {
+          // 플레이어가 땅에 있고 숙여 있으면 통과
+          if (state.player.duck && state.player.y >= GAME_CONFIG.GROUND_Y) {
             continue;  // 숙여 있으면 통과
           }
-          // 서 있으면 충돌
+          // 서 있거나 점프 중이면 충돌 (점프로 넘을 수 없음)
         }
         // 충돌 플래그 설정 (중복 충돌 방지)
         ob.hit = true;
