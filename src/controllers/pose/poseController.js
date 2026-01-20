@@ -11,7 +11,7 @@ export class PoseController {
       jumpTorsoDelta: CALIBRATION.JUMP_TORSO_DELTA
     };
     this.lastDuckState = false;  // 이전 프레임의 duck 상태
-    this.duckReleaseThreshold = CALIBRATION.SQUAT_HIP_DELTA * 0.7;  // 일어설 때는 더 낮은 임계값 사용 (히스터시스)
+    this.duckReleaseThreshold = CALIBRATION.SQUAT_HIP_DELTA * 0.3;  // 일어설 때는 훨씬 더 낮은 임계값 사용 (히스터시스) - 0.7 -> 0.3으로 변경
   }
 
   getLm(landmarks, idx) {
@@ -73,7 +73,8 @@ export class PoseController {
     let duck;
     
     if (this.lastDuckState) {
-      // 이미 숙인 상태라면, 일어서기 위해서는 더 가까워져야 함 (더 엄격한 조건)
+      // 이미 숙인 상태라면, 일어서기 위해서는 훨씬 더 가까워져야 함 (매우 엄격한 조건)
+      // 캘리브레이션 값에 거의 가까워져야 일어설 수 있음
       duck = hipDelta > this.duckReleaseThreshold;
     } else {
       // 서 있는 상태라면, 숙이기 위해서는 기존 임계값 사용
