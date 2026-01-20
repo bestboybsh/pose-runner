@@ -1,8 +1,8 @@
 // Game constants
 export const GAME_CONFIG = {
   INITIAL_SPEED: 8,  // 게임 속도 증가 (6 -> 8)
-  SPEED_INCREMENT: 0.8,  // 속도 증가량 증가 (0.6 -> 0.8)
-  SPEED_INTERVAL: 240,
+  SPEED_INCREMENT: 1.0,  // 속도 증가량 증가 (더 빠르게 증가) (0.8 -> 1.0)
+  SPEED_INTERVAL: 180,  // 속도 증가 간격 감소 (더 자주 증가) (240 -> 180, 약 3초마다)
   GRAVITY: 0.9,
   JUMP_VELOCITY: -18,  // 점프 높이 증가 (더 높고 멀리 점프) (-14 -> -18)
   GROUND_Y: 340,
@@ -23,7 +23,7 @@ export const GAME_CONFIG = {
     HIGH_H: 40,  // 높은 장애물 높이 증가 (26 -> 40)
     HIGH_OFFSET: 70,
     DUCK_W: 75,  // 숙여야 하는 장애물 너비 증가 (50 -> 75)
-    DUCK_H: 45,  // 숙여야 하는 장애물 높이 증가 (30 -> 45)
+    DUCK_H: 200,  // 숙여야 하는 장애물 높이 (점프로 넘을 수 없도록 충분히 높게, 점프 최대 높이 180보다 높음) (45 -> 200)
     LOW_PROBABILITY: 0.50,  // low: 50%, high: 25%, duck: 25%
     HIGH_PROBABILITY: 0.75  // high가 나올 확률 (나머지 중 75%)
   }
@@ -58,8 +58,8 @@ export const CALIBRATION = {
 };
 
 export const ITEM_CONFIG = {
-  SPAWN_MIN_CD: 900,  // 30초에 1-2개: 900~1800프레임 (60fps 기준 15~30초)
-  SPAWN_MAX_CD: 1800,
+  SPAWN_MIN_CD: 550,  // 10초에 하나씩: 550~650프레임 (60fps 기준 약 9~11초)
+  SPAWN_MAX_CD: 650,
   W: 24,  // 하트 크기
   H: 24,
   Y_MIN: 200,  // 아이템 높이 범위

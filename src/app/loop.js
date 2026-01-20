@@ -99,20 +99,21 @@ export class GameLoop {
       }
 
       // Hand wave detection - 오른손/왼손 구분
-      // 캘리브레이션 모드에서만 감지 (게임 오버 후에도 캘리브레이션 모드로 전환되면 감지)
-      if (this.handWaveDetector && landmarks && this.calibrationMode) {
+      // 오른손 흔들기: 게임 중에도 항상 감지 (사진 촬영)
+      // 왼손 흔들기: 캘리브레이션 모드에서만 감지 (게임 시작)
+      if (this.handWaveDetector && landmarks) {
         const waveResult = this.handWaveDetector.detectWave(landmarks);
         if (waveResult.detected) {
           if (waveResult.hand === 'right') {
-            // 오른손 흔들기 → TAKE PHOTO
+            // 오른손 흔들기 → TAKE PHOTO (게임 중에도 가능)
             this.hudView.log("✋ 오른손 흔들기 감지! 얼굴 사진 촬영 중...");
             if (this.onPhotoCapture) {
               this.onPhotoCapture(landmarks);
             } else {
               this.capturePhoto(landmarks);
             }
-          } else if (waveResult.hand === 'left') {
-            // 왼손 흔들기 → CALIBRATE + 게임 시작
+          } else if (waveResult.hand === 'left' && this.calibrationMode) {
+            // 왼손 흔들기 → CALIBRATE + 게임 시작 (캘리브레이션 모드에서만)
             this.hudView.log("👈 왼손 흔들기 감지! 게임 시작 중...");
             if (this.onStartGame) {
               this.onStartGame(landmarks);
@@ -276,8 +277,19 @@ export class GameLoop {
         this.hudView.log("✅ 얼굴 사진 촬영 완료!");
         console.log('Face image set in game state:', faceImage.width, 'x', faceImage.height);
         
-        // 디버깅용 얼굴 미리보기는 버튼 클릭 시에만 표시 (자동 표시 안 함)
-        // 이 메서드는 자동 호출되므로 미리보기 표시 안 함
+        // 디버깅용 얼굴 미리보기 (테스트 패널이 열려있을 때만)
+        const facePreviewEl = document.getElementById('facePreview');
+        const facePreviewImg = document.getElementById('facePreviewImg');
+        if (facePreviewEl && facePreviewImg) {
+          facePreviewImg.src = faceImage.src;
+          // 테스트 패널이 열려있을 때만 표시
+          const poseTestView = this.poseTestView || (window.app && window.app.poseTestView);
+          if (poseTestView && poseTestView.visible) {
+            facePreviewEl.style.display = 'block';
+          } else {
+            facePreviewEl.style.display = 'none';
+          }
+        }
         
         // 콜백 호출 (사진만 촬영)
         if (this.onPhotoCapture) {
