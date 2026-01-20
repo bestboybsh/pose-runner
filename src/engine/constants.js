@@ -52,7 +52,7 @@ export const HAND_WAVE_CONFIG = {
 };
 
 export const CALIBRATION = {
-  SQUAT_HIP_DELTA: 0.08,  // 스쿼트 감지 민감도 (낮을수록 더 민감)
+  SQUAT_HIP_DELTA: 0.05,  // 스쿼트 감지 민감도 (낮을수록 더 민감) - 0.08 -> 0.05로 개선
   JUMP_TORSO_DELTA: 0.10,  // 점프 감지 민감도 조정 (높을수록 덜 민감)
   MIN_VISIBILITY: 0.3
 };
