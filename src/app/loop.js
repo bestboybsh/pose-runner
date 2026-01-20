@@ -136,6 +136,21 @@ export class GameLoop {
       if (!this.calibrationMode) {
         // 실제 시간(performance.now())을 전달하여 정확한 시간 계산
         result = this.engine.update(actions, now);
+        
+        // 게임 속도에 따라 음악 재생 속도 조절
+        if (this.musicService && this.musicService.getIsPlaying()) {
+          const gameState = this.engine.getState();
+          const currentSpeed = gameState.speed;
+          const initialSpeed = 8; // GAME_CONFIG.INITIAL_SPEED
+          
+          // 속도에 비례하여 재생 속도 증가 (초기 속도 기준)
+          // 예: 초기 속도 8, 현재 속도 16 → 재생 속도 1.5배
+          // 최대 1.8배까지 제한 (너무 빠르면 음질이 떨어질 수 있음)
+          const playbackRate = 1.0 + (currentSpeed - initialSpeed) / initialSpeed * 0.5;
+          const clampedRate = Math.min(1.8, playbackRate); // 최대 1.8배속
+          
+          this.musicService.setPlaybackRate(clampedRate);
+        }
       }
 
       // Update UI
