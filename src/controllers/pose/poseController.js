@@ -10,6 +10,8 @@ export class PoseController {
       squatHipDelta: CALIBRATION.SQUAT_HIP_DELTA,
       jumpTorsoDelta: CALIBRATION.JUMP_TORSO_DELTA
     };
+    this.lastDuckState = false;  // 이전 프레임의 duck 상태
+    this.duckReleaseThreshold = CALIBRATION.SQUAT_HIP_DELTA * 0.7;  // 일어설 때는 더 낮은 임계값 사용 (히스터시스)
   }
 
   getLm(landmarks, idx) {
@@ -65,7 +67,20 @@ export class PoseController {
     }
 
     const jump = (this.calibration.torsoY - torsoY) > this.calibration.jumpTorsoDelta;
-    const duck = (hipY - this.calibration.hipY) > this.calibration.squatHipDelta;
+    
+    // Duck 감지에 히스터시스 적용: 한 번 숙인 상태가 되면 더 오래 유지
+    const hipDelta = hipY - this.calibration.hipY;
+    let duck;
+    
+    if (this.lastDuckState) {
+      // 이미 숙인 상태라면, 일어서기 위해서는 더 가까워져야 함 (더 엄격한 조건)
+      duck = hipDelta > this.duckReleaseThreshold;
+    } else {
+      // 서 있는 상태라면, 숙이기 위해서는 기존 임계값 사용
+      duck = hipDelta > this.calibration.squatHipDelta;
+    }
+    
+    this.lastDuckState = duck;  // 현재 상태 저장
 
     return { jump, duck };
   }
@@ -78,6 +93,7 @@ export class PoseController {
     this.calibration.ready = false;
     this.calibration.torsoY = null;
     this.calibration.hipY = null;
+    this.lastDuckState = false;  // duck 상태도 리셋
   }
 
   getCalibration() {
