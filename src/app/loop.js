@@ -99,11 +99,20 @@ export class GameLoop {
       }
 
       // Hand wave detection - 오른손/왼손 구분 (캘리브레이션 모드 또는 게임 오버 상태)
+      // 단, 게임이 실제로 오버 상태이고 재시작 대기 중일 때만 감지
       const gameState = this.engine.getState();
       const isGameOver = gameState && gameState.over;
-      if (this.handWaveDetector && landmarks && (this.calibrationMode || isGameOver)) {
+      
+      // 게임 오버 상태에서 손 흔들기 감지는 한 번만 (재시작 후에는 다시 게임 오버될 때까지 감지 안 함)
+      if (this.handWaveDetector && landmarks && (this.calibrationMode || (isGameOver && this.gameOverSoundPlayed))) {
         const waveResult = this.handWaveDetector.detectWave(landmarks);
         if (waveResult.detected) {
+          // 게임이 실제로 오버 상태이고 캘리브레이션 모드일 때만 처리
+          if (isGameOver && !this.calibrationMode) {
+            // 게임 오버 상태에서는 아직 캘리브레이션 모드로 전환되지 않았으므로 무시
+            return;
+          }
+          
           if (waveResult.hand === 'right') {
             // 오른손 흔들기 → TAKE PHOTO
             this.hudView.log("✋ 오른손 흔들기 감지! 얼굴 사진 촬영 중...");

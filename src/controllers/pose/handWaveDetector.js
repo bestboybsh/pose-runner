@@ -6,7 +6,7 @@ export class HandWaveDetector {
     this.lWristHistory = [];
     this.rWristHistory = [];
     this.lastWaveTime = 0;
-    this.waveCooldown = 1000;  // 1초 쿨다운
+    this.waveCooldown = 2000;  // 2초 쿨다운 (오인식 방지)
   }
 
   getWrist(landmarks, wristIdx) {
