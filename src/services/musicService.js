@@ -165,11 +165,11 @@ export class MusicService {
     return this.isPlaying && !this.audio.paused;
   }
 
-  // 재생 속도 설정 (0.5 ~ 2.0 권장)
+  // 재생 속도 설정 (0.5 ~ 10.0 권장)
   setPlaybackRate(rate) {
     if (!this.audio) return;
-    // 재생 속도 제한 (너무 빠르거나 느리면 음질이 떨어질 수 있음)
-    const clampedRate = Math.max(0.5, Math.min(2.0, rate));
+    // 재생 속도 제한 (너무 빠르거나 느리면 음질이 떨어질 수 있음, 최대 10배속)
+    const clampedRate = Math.max(0.5, Math.min(10.0, rate));
     this.audio.playbackRate = clampedRate;
   }
 
